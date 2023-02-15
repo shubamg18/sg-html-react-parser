@@ -1,0 +1,47 @@
+name: build
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            */*/node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/package.json', './package.json') }}
+        id: cache
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm install --prefer-offline
+
+      - name: Lint JavaScript files
+        run: npm run lint
+
+      - name: Lint TypeScript declaration files
+        run: npm run lint:dts
+
+      - name: Run unit tests
+        run: npm run test:ci
+
+      - name: Run ES modules tests
+        run: npm run test:module
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Run benchmark
+        run: npm run benchmark
+
+      - name: Codecov
+        uses: codecov/codecov-action@v3
